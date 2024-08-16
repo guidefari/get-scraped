@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "sst dev",
     "deploy:dev": "sst deploy --stage dev",
-    "deploy:prod": "sst deploy --stage prod"
+    "deploy:prod": "sst deploy --stage production"
   },
   "keywords": [],
   "author": "Guide Fari (https://guidefari.com/)",
