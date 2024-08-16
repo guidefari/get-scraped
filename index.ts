@@ -7,8 +7,10 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3"
 import { parse } from "node-html-parser"
+import { Parser } from "@json2csv/plainjs"
 
 const s3 = new S3Client({})
+const parser = new Parser({})
 
 export async function upload() {
   const command = new PutObjectCommand({
@@ -47,6 +49,13 @@ export async function latest() {
   }
 }
 
+type Company = {
+  CompanyName: string
+  OpeningPrice: string
+  ClosingPrice: string
+  TotalTradedValue: string
+}
+
 export async function scrape() {
   const html = await fetch("https://www.zse.co.zw/price-sheet/")
   // return html.text()
@@ -54,9 +63,10 @@ export async function scrape() {
   const root = parse(document)
 
   const tableRows = root?.querySelector("table")?.querySelectorAll("tr")
+  if (!tableRows) return "No table found👀"
 
-  const data = []
-  for (let i = 2; i < tableRows.length; i += 2) {
+  const data: Company[] = []
+  for (let i = 1; i < tableRows.length; i += 1) {
     const columns = tableRows[i].querySelectorAll("td")
 
     const rowData = {
@@ -66,10 +76,30 @@ export async function scrape() {
       TotalTradedValue: columns[3].text.trim(),
     }
 
-    data.push(rowData)
+    if (rowData.CompanyName) {
+      data.push(rowData)
+    }
   }
+
+  const csv = JSONtoCSV(data)
+  console.log(csv)
 
   // console.log(JSON.stringify(data, null, 2));
 
-  return JSON.stringify(data, null, 2)
+  // return JSON.stringify(data, null, 2)
+
+  return {
+    statusCode: 200,
+    contentType: "text/csv",
+    contentDisposition: "attachment; filename=zse-prices.csv",
+    body: csv,
+  }
+}
+
+function JSONtoCSV(json: Company[]) {
+  try {
+    return parser.parse(json)
+  } catch (err) {
+    console.error(err)
+  }
 }
