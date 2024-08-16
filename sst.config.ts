@@ -15,15 +15,15 @@ export default $config({
 
     const api = new sst.aws.ApiGatewayV2("MyApi")
 
-    api.route("GET /", {
-      link: [bucket],
-      handler: "index.upload",
-    })
+    // api.route("GET /", {
+    //   link: [bucket],
+    //   handler: "index.upload",
+    // })
 
-    api.route("GET /latest", {
-      link: [bucket],
-      handler: "index.latest",
-    })
+    // api.route("GET /latest", {
+    //   link: [bucket],
+    //   handler: "index.latest",
+    // })
     api.route("GET /scrape", {
       link: [bucket],
       handler: "index.scrape",
