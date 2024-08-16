@@ -8,6 +8,7 @@ import {
 } from "@aws-sdk/client-s3"
 import { parse } from "node-html-parser"
 import { Parser } from "@json2csv/plainjs"
+import type { APIGatewayProxyEvent } from "aws-lambda"
 
 const s3 = new S3Client({})
 const parser = new Parser({})
@@ -56,7 +57,8 @@ type Company = {
   TotalTradedValue: string
 }
 
-export async function scrape() {
+export async function scrape(event: APIGatewayProxyEvent) {
+  console.log("event:", event)
   const html = await fetch("https://www.zse.co.zw/price-sheet/")
   // return html.text()
   const document = await html.text()
@@ -82,7 +84,7 @@ export async function scrape() {
   }
 
   const csv = JSONtoCSV(data)
-  console.log(csv)
+  // console.log(csv)
 
   // console.log(JSON.stringify(data, null, 2));
 
@@ -90,8 +92,10 @@ export async function scrape() {
 
   return {
     statusCode: 200,
-    contentType: "text/csv",
-    contentDisposition: "attachment; filename=zse-prices.csv",
+    headers: {
+      "Content-Type": "text/csv",
+      "Content-Disposition": `attachment; filename=zse-${new Date().toISOString()}.csv`,
+    },
     body: csv,
   }
 }
