@@ -1,54 +1,8 @@
-import { Resource } from "sst"
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
-import {
-  S3Client,
-  GetObjectCommand,
-  PutObjectCommand,
-  ListObjectsV2Command,
-} from "@aws-sdk/client-s3"
 import { parse } from "node-html-parser"
 import { Parser } from "@json2csv/plainjs"
 import type { APIGatewayProxyEvent } from "aws-lambda"
 
-const s3 = new S3Client({})
 const parser = new Parser({})
-
-export async function upload() {
-  const command = new PutObjectCommand({
-    Key: crypto.randomUUID(),
-    Bucket: Resource.MyBucket.name,
-  })
-
-  return {
-    statusCode: 200,
-    body: await getSignedUrl(s3, command),
-  }
-}
-
-export async function latest() {
-  const objects = await s3.send(
-    new ListObjectsV2Command({
-      Bucket: Resource.MyBucket.name,
-    })
-  )
-
-  const latestFile = objects.Contents!.sort(
-    (a, b) =>
-      (b.LastModified?.getTime() ?? 0) - (a.LastModified?.getTime() ?? 0)
-  )[0]
-
-  const command = new GetObjectCommand({
-    Key: latestFile.Key,
-    Bucket: Resource.MyBucket.name,
-  })
-
-  return {
-    statusCode: 302,
-    headers: {
-      Location: await getSignedUrl(s3, command),
-    },
-  }
-}
 
 type Company = {
   CompanyName: string
@@ -58,9 +12,7 @@ type Company = {
 }
 
 export async function scrape(event: APIGatewayProxyEvent) {
-  console.log("event:", event)
   const html = await fetch("https://www.zse.co.zw/price-sheet/")
-  // return html.text()
   const document = await html.text()
   const root = parse(document)
 
@@ -84,11 +36,6 @@ export async function scrape(event: APIGatewayProxyEvent) {
   }
 
   const csv = JSONtoCSV(data)
-  // console.log(csv)
-
-  // console.log(JSON.stringify(data, null, 2));
-
-  // return JSON.stringify(data, null, 2)
 
   return {
     statusCode: 200,
