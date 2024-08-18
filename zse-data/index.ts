@@ -1,27 +1,5 @@
-console.log("Hello via Bun!")
-
-// const fs = require("fs")
-// const path = require("path")
-
-// import fs from "node:fs"
 import path from "node:path"
-
 import { promises as fs } from "node:fs"
-
-const directoryPath = "./csv"
-
-// fs.readdir(directoryPath, (err, files) => {
-//   if (err) {
-//     console.error("Error reading directory:", err)
-//     return
-//   }
-
-//   const fileNames = files.filter(file =>
-//     fs.statSync(path.join(directoryPath, file)).isFile()
-//   )
-
-//   console.log(fileNames)
-// })
 
 async function copyAndRenameFiles(srcDir: string, destDir: string) {
   try {
@@ -57,11 +35,6 @@ function dateRename(date: string) {
   const month = parts[0]
   const day = parts[1]
   const year = parts[2].substring(0, 4)
-
-  // // Convert the Date object to locale date string (en-ZA)
-  // const localeDateString = inputDate.toLocaleDateString('en-ZA');
-
-  // console.log(localeDateString)
 
   return `${year}-${month}-${day}.csv`
 }
