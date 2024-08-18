@@ -15,9 +15,26 @@ export default $config({
 
     const api = new sst.aws.ApiGatewayV2("MyApi")
 
+    const table = new sst.aws.Dynamo("MyTable", {
+      fields: {
+        // CompanyName: "string",
+        TradingDay: "string",
+      },
+      primaryIndex: {
+        hashKey: "TradingDay",
+        // rangeKey: "CompanyName",
+      },
+    })
+
     api.route("GET /scrape", {
-      link: [bucket],
+      link: [bucket, table],
       handler: "index.scrape",
     })
+
+    return {
+      api: api.url,
+      tableName: table.name,
+      tableArn: table.arn,
+    }
   },
 })

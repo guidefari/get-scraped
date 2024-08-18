@@ -3,13 +3,17 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
-    MyApi: {
-      type: "sst.aws.ApiGatewayV2"
-      url: string
+    "MyApi": {
+      "type": "sst.aws.ApiGatewayV2"
+      "url": string
     }
-    MyBucket: {
-      name: string
-      type: "sst.aws.Bucket"
+    "MyBucket": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
+    "MyTable": {
+      "name": string
+      "type": "sst.aws.Dynamo"
     }
   }
 }
