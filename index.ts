@@ -1,19 +1,24 @@
 import { parse } from "node-html-parser"
 import { Parser } from "@json2csv/plainjs"
 import type { APIGatewayProxyEvent } from "aws-lambda"
-import { DynamoDBClient, PutItemCommand, Put } from "@aws-sdk/client-dynamodb"
+import {
+  DynamoDBClient,
+  PutItemCommand,
+  Put,
+  QueryCommand,
+  GetItemCommand,
+  ScanCommandInput,
+  QueryCommandInput,
+  ScanCommand,
+} from "@aws-sdk/client-dynamodb"
 import { Resource } from "sst"
+import type { Company, DBWriteRequest } from "./types"
+import { getDateString } from "./util"
+import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb"
 
 const parser = new Parser({})
 const dynamoDBClient = new DynamoDBClient()
-
-type Company = {
-  CompanyName: string
-  OpeningPrice: string
-  ClosingPrice: string
-  TotalTradedValue: string
-  TotalTradedVolume: string
-}
+const dynamoDocumentClient = DynamoDBDocument.from(dynamoDBClient)
 
 export async function scrape(event: APIGatewayProxyEvent) {
   const html = await fetch("https://www.zse.co.zw/price-sheet/")
@@ -35,7 +40,7 @@ export async function scrape(event: APIGatewayProxyEvent) {
   const day = dateArray[0]
   const year = dateArray[2]
 
-  const dateISO = new Date(`${month} ${day}, ${year}`).toISOString()
+  const dateString = getDateString(`${month} ${day}, ${year}`)
 
   const data: Company[] = []
   for (let i = 1; i < tableRows.length; i += 1) {
@@ -56,28 +61,9 @@ export async function scrape(event: APIGatewayProxyEvent) {
   // console.log("data:", data[2])
 
   await writeLatestToDynamoDB({
-    TradingDay: dateISO,
-    data,
+    TradingDay: dateString,
+    TradingData: data,
   })
-
-  // const writeToDB = await writeLatestToDynamoDB({
-  //   TradingDay: new Date().toISOString(),
-  //   data: data,
-  // })
-
-  // return data
-  // if (event.pathParameters?.csv) {
-  //   return returnAsCSV(data)
-  // }
-
-  // return {
-  //   statusCode: 200,
-  //   // headers: {
-  //   // "Content-Type": "text",
-  //   // "Content-Disposition": `attachment; filename=zse-${new Date().toISOString()}.csv`,
-  //   // },
-  //   body: dateParagraph,
-  // }
 }
 
 function JSONtoCSV(json: Company[]) {
@@ -109,14 +95,13 @@ function returnAsCSV(data: Company[]) {
   }
 }
 
-type DBWriteRequest = {
-  TradingDay: string
-  data: Company[]
-}
-
 async function writeLatestToDynamoDB(data: DBWriteRequest) {
   // console.log("data:", data)
   // const requestJSON = JSON.parse(event.body)
+
+  // Make sure to assert that date is in the desire format
+  // zod could help
+
   if (!data) return { statusCode: 500, body: "No data to write" }
 
   try {
@@ -126,7 +111,7 @@ async function writeLatestToDynamoDB(data: DBWriteRequest) {
         Item: {
           TradingDay: { S: data.TradingDay },
           TradingData: {
-            L: data.data.map(row => ({
+            L: data.TradingData.map(row => ({
               M: {
                 CompanyName: { S: row.CompanyName },
                 OpeningPrice: { S: row.OpeningPrice },
@@ -151,5 +136,39 @@ async function writeLatestToDynamoDB(data: DBWriteRequest) {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }, null, 2),
     }
+  }
+}
+
+export async function getLatest() {
+  // const response = await dynamoDBClient.send(
+  //   new ScanCommand({
+  //     TableName: Resource.MyTable.name,
+  //     // Key: {
+  //     //   TradingDay: { S: getDateString(new Date()) },
+  //     // }
+  //     // KeyConditionExpression: "attribute_exists(TradingDay)",
+  //     Limit: 1, // Only get the latest
+  //   })
+  // )
+
+  const response = await dynamoDocumentClient.scan({
+    TableName: Resource.MyTable.name,
+    // Key: {
+    //   TradingDay: { S: getDateString(new Date()) },
+    // }
+    // KeyConditionExpression: "attribute_exists(TradingDay)",
+    Limit: 1, // Only get the latest
+  })
+
+  if (response?.Items?.length === 0) {
+    return {
+      statusCode: 404,
+      body: "No data found",
+    }
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify(response, null, 2),
   }
 }

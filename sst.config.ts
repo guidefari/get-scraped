@@ -31,6 +31,11 @@ export default $config({
       handler: "index.scrape",
     })
 
+    api.route("GET /latest", {
+      link: [bucket, table],
+      handler: "index.getLatest",
+    })
+
     return {
       api: api.url,
       tableName: table.name,

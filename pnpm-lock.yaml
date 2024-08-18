@@ -14,6 +14,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.540.0
         version: 3.631.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: ^3.632.0
+        version: 3.632.0(@aws-sdk/client-dynamodb@3.632.0)
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.540.0
         version: 3.631.0
@@ -204,6 +207,12 @@ packages:
     resolution: {integrity: sha512-CzuRWMj/xtN9p9eP915nlPmlyniTzke732Ow/M60++gGgB3W+RtZyFftw3TEx+NzNhd1tH54dEcGiWdiNaBz3Q==}
     engines: {node: '>=16.0.0'}
 
+  '@aws-sdk/lib-dynamodb@3.632.0':
+    resolution: {integrity: sha512-8QBjfCEKPOpU2stxCJ/DGDL7Gb1tzgwPwC1XLMzLW3rR94EcrlmJatEBXIHbGQypVvHVdwu3xILDrp4qn6P+Sg==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      '@aws-sdk/client-dynamodb': ^3.632.0
+
   '@aws-sdk/middleware-bucket-endpoint@3.620.0':
     resolution: {integrity: sha512-eGLL0W6L3HDb3OACyetZYOWpHJ+gLo0TehQKeQyy2G8vTYXqNTeqYhuI6up9HVjBzU9eQiULVQETmgQs7TFaRg==}
     engines: {node: '>=16.0.0'}
@@ -309,6 +318,12 @@ packages:
   '@aws-sdk/util-arn-parser@3.568.0':
     resolution: {integrity: sha512-XUKJWWo+KOB7fbnPP0+g/o5Ulku/X53t7i/h+sPHr5xxYTJJ9CYnbToo95mzxe7xWvkLrsNtJ8L+MnNn9INs2w==}
     engines: {node: '>=16.0.0'}
+
+  '@aws-sdk/util-dynamodb@3.632.0':
+    resolution: {integrity: sha512-uvfHEk7y9JKLTOXPOQi+GhQLs0Eo09xNNMGk8ptZUeXS4u/Qs6lHKJK6i1khoeeQ6+ASSxmYmTbDhpPqUKGPEg==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      '@aws-sdk/client-dynamodb': ^3.632.0
 
   '@aws-sdk/util-endpoints@3.478.0':
     resolution: {integrity: sha512-u9Mcg3euGJGs5clPt9mBuhBjHiEKiD0PnfvArhfq9i+dcY5mbCq/i1Dezp3iv1fZH9xxQt7hPXDfSpt1yUSM6g==}
@@ -1706,6 +1721,15 @@ snapshots:
       mnemonist: 0.38.3
       tslib: 2.6.3
 
+  '@aws-sdk/lib-dynamodb@3.632.0(@aws-sdk/client-dynamodb@3.632.0)':
+    dependencies:
+      '@aws-sdk/client-dynamodb': 3.632.0
+      '@aws-sdk/util-dynamodb': 3.632.0(@aws-sdk/client-dynamodb@3.632.0)
+      '@smithy/core': 2.3.2
+      '@smithy/smithy-client': 3.1.12
+      '@smithy/types': 3.3.0
+      tslib: 2.6.3
+
   '@aws-sdk/middleware-bucket-endpoint@3.620.0':
     dependencies:
       '@aws-sdk/types': 3.609.0
@@ -1955,6 +1979,11 @@ snapshots:
 
   '@aws-sdk/util-arn-parser@3.568.0':
     dependencies:
+      tslib: 2.6.3
+
+  '@aws-sdk/util-dynamodb@3.632.0(@aws-sdk/client-dynamodb@3.632.0)':
+    dependencies:
+      '@aws-sdk/client-dynamodb': 3.632.0
       tslib: 2.6.3
 
   '@aws-sdk/util-endpoints@3.478.0':
