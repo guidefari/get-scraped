@@ -49,14 +49,6 @@ async function deleteLines(srcDir: string, destDir: string) {
 
       // write this modified file to the new directory
       await Bun.write(destFilePath, modifiedFile)
-      // fs.writeFile(destFilePath, modifiedFile, err => {
-      //   if (err) {
-      //     console.error(err)
-      //     return
-      //   }
-      // })
-
-      // await fs.copyFile(modifiedFile, destFilePath)
 
       // Copy file to the new directory with renamed filename
       console.log(`deleted emtpy lines: ${srcFilePath} -> ${destFilePath}`)
