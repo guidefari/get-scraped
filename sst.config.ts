@@ -36,6 +36,11 @@ export default $config({
       handler: "index.getLatest",
     })
 
+    api.route("POST /insert", {
+      link: [bucket, table],
+      handler: "index.insertItem",
+    })
+
     return {
       api: api.url,
       tableName: table.name,
