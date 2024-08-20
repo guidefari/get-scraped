@@ -41,6 +41,11 @@ export default $config({
       handler: "index.insertItem",
     })
 
+    api.route("GET /last/{days}", {
+      link: [bucket, table],
+      handler: "index.lastXDays",
+    })
+
     return {
       api: api.url,
       tableName: table.name,

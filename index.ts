@@ -38,18 +38,19 @@ export async function scrape(event: APIGatewayProxyEvent) {
   const day = dateArray[0]
   const year = dateArray[2]
 
-  const dateString = getDateString(`${month} ${day}, ${year}`)
+  const dateString = getDateString({ year, month, day })
+  if (!dateString) return "Failed to extract date from the page👀"
 
   const data: Company[] = []
   for (let i = 1; i < tableRows.length; i += 1) {
     const columns = tableRows[i].querySelectorAll("td")
 
     const rowData: Company = {
-      CompanyName: columns[1].text.trim(),
-      OpeningPrice: columns[2].text.trim(),
-      ClosingPrice: columns[3].text.trim(),
-      TotalTradedVolume: columns[4].text.trim(),
-      TotalTradedValue: columns[5].text.trim(),
+      CompanyName: columns[0]?.text.trim() ?? "",
+      OpeningPrice: columns[1]?.text.trim() ?? "",
+      ClosingPrice: columns[2]?.text.trim() ?? "",
+      TotalTradedVolume: columns[3]?.text.trim() ?? "",
+      TotalTradedValue: columns[4]?.text.trim() ?? "",
     }
 
     if (rowData.CompanyName && rowData.OpeningPrice) {
@@ -160,8 +161,8 @@ export async function insertItem(event: APIGatewayProxyEvent) {
                 CompanyName: { S: row.CompanyName },
                 OpeningPrice: { S: row.OpeningPrice },
                 ClosingPrice: { S: row.ClosingPrice },
-                TotalTradedValue: { S: row.TotalTradedValue },
-                TotalTradedVolume: { S: row.TotalTradedVolume },
+                TotalTradedValue: { S: row.TotalTradedValue || "" },
+                TotalTradedVolume: { S: row.TotalTradedVolume || "" },
               },
             })),
           },
@@ -178,6 +179,32 @@ export async function insertItem(event: APIGatewayProxyEvent) {
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }, null, 2),
+    }
+  }
+}
+
+export async function lastXDays(event: APIGatewayProxyEvent) {
+  const days = Number.parseInt(event.pathParameters?.days || "")
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+
+  const stringDate = startDate.toISOString()
+  console.log("stringDate:", stringDate)
+
+  if (!days) return { statusCode: 400, body: "No days provided" }
+
+  const response = await dynamoDocumentClient.query({
+    TableName: Resource.MyTable.name,
+    KeyConditionExpression: "TradingDay > :stringDate",
+    ExpressionAttributeValues: {
+      ":stringDate": stringDate,
+    },
+  })
+
+  if (response?.Items?.length === 0) {
+    return {
+      statusCode: 404,
+      body: "No data found",
     }
   }
 }
