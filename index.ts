@@ -1,5 +1,4 @@
 import { parse } from "node-html-parser"
-import { Parser } from "@json2csv/plainjs"
 import type { APIGatewayProxyEvent } from "aws-lambda"
 import {
   DynamoDBClient,
@@ -13,10 +12,9 @@ import {
 } from "@aws-sdk/client-dynamodb"
 import { Resource } from "sst"
 import type { Company, DBWriteRequest } from "./types"
-import { getDateString } from "./util"
+import { getDateString, JSONtoCSV } from "./util"
 import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb"
 
-const parser = new Parser({})
 const dynamoDBClient = new DynamoDBClient()
 const dynamoDocumentClient = DynamoDBDocument.from(dynamoDBClient)
 
@@ -64,35 +62,6 @@ export async function scrape(event: APIGatewayProxyEvent) {
     TradingDay: dateString,
     TradingData: data,
   })
-}
-
-function JSONtoCSV(json: Company[]) {
-  try {
-    return parser.parse(json)
-  } catch (err) {
-    console.error(err)
-    return new Error("Failed to parse JSON")
-  }
-}
-
-function returnAsCSV(data: Company[]) {
-  const csv = JSONtoCSV(data)
-
-  if (csv instanceof Error) {
-    return {
-      statusCode: 500,
-      body: csv.message,
-    }
-  }
-
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename=zse-${new Date().toISOString()}.csv`,
-    },
-    body: csv,
-  }
 }
 
 async function writeLatestToDynamoDB(data: DBWriteRequest) {
@@ -170,5 +139,45 @@ export async function getLatest() {
   return {
     statusCode: 200,
     body: JSON.stringify(response, null, 2),
+  }
+}
+
+export async function insertItem(event: APIGatewayProxyEvent) {
+  if (!event.body) return { statusCode: 400, body: "Request body is empty" }
+  const requestJSON = JSON.parse(event.body)
+
+  if (!requestJSON) return { statusCode: 400, body: "JSON is malformed" }
+
+  try {
+    await dynamoDBClient.send(
+      new PutItemCommand({
+        TableName: Resource.MyTable.name,
+        Item: {
+          TradingDay: { S: requestJSON.TradingDay },
+          TradingData: {
+            L: requestJSON.TradingData.map(row => ({
+              M: {
+                CompanyName: { S: row.CompanyName },
+                OpeningPrice: { S: row.OpeningPrice },
+                ClosingPrice: { S: row.ClosingPrice },
+                TotalTradedValue: { S: row.TotalTradedValue },
+                TotalTradedVolume: { S: row.TotalTradedVolume },
+              },
+            })),
+          },
+        },
+      })
+    )
+
+    return {
+      statusCode: 200,
+      body: "Written to DynamoDB",
+    }
+  } catch (error) {
+    console.error("failed to write to dynamoDB", error)
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message }, null, 2),
+    }
   }
 }
