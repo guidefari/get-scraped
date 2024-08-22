@@ -46,6 +46,14 @@ export default $config({
       handler: "index.lastXDays",
     })
 
+    const cron = new sst.aws.Cron("DailyScrape", {
+      schedule: "cron(0 8 * * ? *)",
+      job: {
+          handler: "index.scrape",
+          link: [bucket, table],
+      },
+    });
+    
     return {
       api: api.url,
       tableName: table.name,
