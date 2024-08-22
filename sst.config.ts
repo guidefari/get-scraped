@@ -47,13 +47,13 @@ export default $config({
     })
 
     const cron = new sst.aws.Cron("DailyScrape", {
-      schedule: "cron(0 8 * * ? *)",
+      schedule: "rate(12 hours)",
       job: {
-          handler: "index.scrape",
-          link: [bucket, table],
+        handler: "index.scrape",
+        link: [bucket, table],
       },
     });
-    
+
     return {
       api: api.url,
       tableName: table.name,
