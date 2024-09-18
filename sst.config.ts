@@ -1,63 +1,59 @@
 /// <reference path="./.sst/platform/config.d.ts" />
 
 export default $config({
-  app(input) {
-    return {
-      name: "get-scraped",
-      removal: input?.stage === "production" ? "retain" : "remove",
-      home: "aws",
-    }
-  },
-  async run() {
-    const bucket = new sst.aws.Bucket("MyBucket", {
-      public: true,
-    })
+	app(input) {
+		return {
+			name: "get-scraped",
+			removal: input?.stage === "production" ? "retain" : "remove",
+			home: "aws",
+		};
+	},
+	async run() {
+		const api = new sst.aws.ApiGatewayV2("MyApi");
 
-    const api = new sst.aws.ApiGatewayV2("MyApi")
+		const table = new sst.aws.Dynamo("MyTable", {
+			fields: {
+				// CompanyName: "string",
+				TradingDay: "string",
+			},
+			primaryIndex: {
+				hashKey: "TradingDay",
+				// rangeKey: "CompanyName",
+			},
+		});
 
-    const table = new sst.aws.Dynamo("MyTable", {
-      fields: {
-        // CompanyName: "string",
-        TradingDay: "string",
-      },
-      primaryIndex: {
-        hashKey: "TradingDay",
-        // rangeKey: "CompanyName",
-      },
-    })
+		api.route("GET /scrape", {
+			link: [table],
+			handler: "index.scrape",
+		});
 
-    api.route("GET /scrape", {
-      link: [bucket, table],
-      handler: "index.scrape",
-    })
+		api.route("GET /latest", {
+			link: [table],
+			handler: "index.getLatest",
+		});
 
-    api.route("GET /latest", {
-      link: [bucket, table],
-      handler: "index.getLatest",
-    })
+		api.route("POST /insert", {
+			link: [table],
+			handler: "index.insertItem",
+		});
 
-    api.route("POST /insert", {
-      link: [bucket, table],
-      handler: "index.insertItem",
-    })
+		api.route("GET /last/{days}", {
+			link: [table],
+			handler: "index.lastXDays",
+		});
 
-    api.route("GET /last/{days}", {
-      link: [bucket, table],
-      handler: "index.lastXDays",
-    })
+		const cron = new sst.aws.Cron("DailyScrape", {
+			schedule: "cron(30 15 * * ? *)",
+			job: {
+				handler: "index.scrape",
+				link: [table],
+			},
+		});
 
-    const cron = new sst.aws.Cron("DailyScrape", {
-      schedule: "rate(12 hours)",
-      job: {
-        handler: "index.scrape",
-        link: [bucket, table],
-      },
-    });
-
-    return {
-      api: api.url,
-      tableName: table.name,
-      tableArn: table.arn,
-    }
-  },
-})
+		return {
+			api: api.url,
+			tableName: table.name,
+			tableArn: table.arn,
+		};
+	},
+});
