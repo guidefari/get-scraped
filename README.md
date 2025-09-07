@@ -1,3 +1,5 @@
+nb: archived, continued [here](https://github.com/Teekaynium/ZimStock-Project)
+
 # Desired response
 
 ```json
